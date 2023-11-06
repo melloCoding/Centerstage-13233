@@ -150,7 +150,26 @@ public class TeleOpMain extends LinearOpMode {
       armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       armMoto.setPower(1);
       telemetry.addData("Lift Rotation:", "a button pressed");
-      delay(100);
+      sleep(100);
+      }
+      
+      if(gamepad2.b)
+      {
+      armMoto.setTargetPosition(297);
+      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+      armMoto.setPower(1);
+      telemetry.addData("Lift Rotation:", "a button pressed");
+      sleep(100);
+      }
+      
+      
+      if(gamepad2.y)
+      {
+      armMoto.setTargetPosition(0);
+      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+      armMoto.setPower(1);
+      telemetry.addData("Lift Rotation:", "a button pressed");
+      sleep(100);
       }
       
       telemetry.update();
@@ -208,6 +227,11 @@ public class TeleOpMain extends LinearOpMode {
       armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       armMoto.setPower(1);
       telemetry.addData("Lift Rotation:", "a button pressed");
+      }
+      
+      
+    
+}
       }
       
       
