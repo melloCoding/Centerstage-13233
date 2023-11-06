@@ -22,7 +22,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 @TeleOp(name = "TeleOpMain", group = "Drive")
 public class TeleOpMain extends LinearOpMode {
 
-  public boolean aButt = false;
+  //public boolean aButt = false;
   
   //Drive Wheels
   private DcMotor FLMoto;
@@ -142,16 +142,17 @@ public class TeleOpMain extends LinearOpMode {
        
       
       
-      /*
+      
       //Loop Blocks
-      if(aButt == true)
+      if(gamepad2.a)
       {
       armMoto.setTargetPosition(220);
       armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       armMoto.setPower(1);
       telemetry.addData("Lift Rotation:", "a button pressed");
+      delay(100);
       }
-      */
+      
       telemetry.update();
       //Code for rotating hang actuator
       armMoto.setPower(gamepad2.left_stick_y/3);
