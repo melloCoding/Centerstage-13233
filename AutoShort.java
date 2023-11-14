@@ -68,11 +68,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
@@ -82,18 +77,15 @@ import java.util.List;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Environment;
-//import com.vuforia.Image;
-//import com.vuforia.PIXEL_FORMAT;
-//import com.vuforia.Vuforia;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 
 
-//@Autonomous(name = "AutoAllWithTF", group = "")
+/@Autonomous(name = "AutoShort", group = "")
 
-public class AutoAllWithTF extends LinearOpMode {
+public class AutoShort extends LinearOpMode {
    
     private DcMotor FLMoto;
     private DcMotor FRMoto;
