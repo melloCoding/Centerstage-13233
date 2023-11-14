@@ -908,10 +908,4 @@ public class AutoShort extends LinearOpMode {
         // reset angle tracking on new heading.
         resetAngle();
     }  
-    
-        
-
-    
-
-  
 }
