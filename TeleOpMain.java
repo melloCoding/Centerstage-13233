@@ -27,6 +27,7 @@ public class TeleOpMain extends LinearOpMode {
   private DcMotor BLMoto;
   private DcMotor BRMoto;
   
+  
   //Hanging Linear Actuator
   private DcMotor hangMoto;
   private DcMotor armMoto;
@@ -34,6 +35,8 @@ public class TeleOpMain extends LinearOpMode {
   
   //Intake
   private DcMotor intakeArm;
+  private Servo intakeServo;
+  private Servo intakeRotateServo;
   
   //BlinkinLEDs
   private RevBlinkinLedDriver blinkinLedDriver;
@@ -79,8 +82,8 @@ public class TeleOpMain extends LinearOpMode {
     hangMoto = hardwareMap.dcMotor.get("hangMoto");
     armMoto = hardwareMap.dcMotor.get("armMoto");
     intakeArm = hardwareMap.dcMotor.get("intakeArm");
-    //intakeServoLeft = hardwareMap.servo.get("intakeServoLeft");
-    //intakeServoRight = hardwareMap.servo.get("intakeServoRight");
+    intakeServo = hardwareMap.servo.get("intakeServo");
+    intakeRotateServo = hardwareMap.servo.get("intakeRotateServo");
     //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
     
     
