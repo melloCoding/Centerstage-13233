@@ -19,12 +19,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 
-
-
 @TeleOp(name = "TeleOpSolo", group = "Drive")
 public class TeleOpSolo extends LinearOpMode {
 
-  //public boolean aButt = false;
+
   
   //Drive Wheels
   private DcMotor FLMoto;
@@ -34,7 +32,7 @@ public class TeleOpSolo extends LinearOpMode {
   
   //Hanging Linear Actuator
   private DcMotor hangMoto;
-  private DcMotor armMoto;
+  private DcMotor hangRMoto;
   
   //BlinkinLEDs
   private RevBlinkinLedDriver blinkinLedDriver;
@@ -60,7 +58,6 @@ public class TeleOpSolo extends LinearOpMode {
     double wUP = .3;
     double Iin = 1;
     double Fly = 1;
-    
 
     
     //****************************************//
@@ -79,19 +76,15 @@ public class TeleOpSolo extends LinearOpMode {
     BLMoto = hardwareMap.dcMotor.get("BLMoto");
     BRMoto = hardwareMap.dcMotor.get("FRMoto");
     hangMoto = hardwareMap.dcMotor.get("hangMoto");
-    armMoto = hardwareMap.dcMotor.get("armMoto");
+    hangRMoto = hardwareMap.dcMotor.get("hangRMoto");
     //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
-    
     
     //BlinkinLEDs
     blinkinLedDriver = hardwareMap.get(RevBlinkinLedDriver.class, "blinkinLed");
     blinkinLedDriver.setPattern(BasePattern);
     
-    int armMotoPosition = 0;
-    int speedMod = 1;
+    int hangMotoPosition = 0;
 
-    //int pastPole = 297;
-    //int atPole = 220;
     telemetry.update();
 
     float hsvValues[] = {
@@ -114,19 +107,23 @@ public class TeleOpSolo extends LinearOpMode {
     BLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
     BRMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
-    //armRMoto Rotates the lifting arm
-    armMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-    armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    //setting the brake behavior
+    FLMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    FRMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    BLMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    BRMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    
+    //hangRMoto Rotates the lifting arm
     //hangMoto moves the lift arm up and down
-    hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-    armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    //hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    hangRMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
     hangMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-    armMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-    hangMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    //armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     
-    resetEncoders();
+    hangMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    
+    hangMoto.setTargetPosition(0);
+    
     // Wait for the start of TeleOp
     waitForStart();
 
@@ -137,56 +134,25 @@ public class TeleOpSolo extends LinearOpMode {
     //******************************************//
     while (opModeIsActive()) {
       telemetry.addData("Status", "opModeIsActive");
-      telemetry.addData("Lift Rotation:", armMoto.getCurrentPosition());
+
       telemetry.update();
 
      // telemetry.addData("hang Position:", hangMotoPosition);
       
-      //Loop Blocks
-      while(gamepad1.x){
-        speedMod=1.5;
-      }
-      /*else{
-        speedMod=1;
-      }*/
-      if(gamepad1.a)
-      {
-      armMoto.setTargetPosition(220);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
-      }
-      
-      if(gamepad1.b)
-      {
-      armMoto.setTargetPosition(297);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
-      }
-      
-      
-      if(gamepad1.y)
-      {
-      armMoto.setTargetPosition(0);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
-      }
-      
-      telemetry.update();
-      //Code for rotating hang actuator
-      //armMoto.setPower(gamepad1.left_stick_y/3);
 
+      //Loop Blocks
+      //hangMoto.setTargetPosition(hangMotoPosition);
+    
+      
+      //Code for rotating hang actuator
+        hangRMoto.setPower(gamepad2.left_stick_y/2);
+        //hangRMoto.setPower(gamepad2.left_stick_y);
         
       // code for raising hang actuator
-        if(gamepad1.right_bumper == true){
+        if(gamepad1.dpad_up == true){
           hangMoto.setPower(1);
         }
-        else if(gamepad1.left_bumper == true){
+        else if(gamepad1.dpad_down == true){
           hangMoto.setPower(-1);
         }
         else{
@@ -195,36 +161,24 @@ public class TeleOpSolo extends LinearOpMode {
         
       
         //Include Regular Drive Mechanics
-        FRMoto.setPower(gamepad1.left_stick_y*speedMod); //FL
-        FLMoto.setPower(gamepad1.right_stick_y*speedMod); //BR
-        BRMoto.setPower(gamepad1.left_stick_y*speedMod); //BL
-        BLMoto.setPower(gamepad1.right_stick_y*speedMod); //FR
+        FRMoto.setPower(gamepad1.left_stick_y); //FL
+        FLMoto.setPower(gamepad1.right_stick_y); //BR
+        BRMoto.setPower(gamepad1.left_stick_y); //BL
+        BLMoto.setPower(gamepad1.right_stick_y); //FR
         
         //Strafe Right
-        FRMoto.setPower(gamepad1.right_trigger*speedMod);
-        FLMoto.setPower(gamepad1.right_trigger*speedMod);
-        BRMoto.setPower(-gamepad1.right_trigger*speedMod);
-        BLMoto.setPower(-gamepad1.right_trigger*speedMod);
+        FRMoto.setPower(gamepad1.right_trigger);
+        FLMoto.setPower(gamepad1.right_trigger);
+        BRMoto.setPower(-gamepad1.right_trigger);
+        BLMoto.setPower(-gamepad1.right_trigger);
         
         // Strafe Left
-        FRMoto.setPower(-gamepad1.left_trigger*speedMod);
-        FLMoto.setPower(-gamepad1.left_trigger*speedMod);
-        BRMoto.setPower(gamepad1.left_trigger*speedMod);
-        BLMoto.setPower(gamepad1.left_trigger*speedMod);
+        FRMoto.setPower(-gamepad1.left_trigger);
+        FLMoto.setPower(-gamepad1.left_trigger);
+        BRMoto.setPower(gamepad1.left_trigger);
+        BLMoto.setPower(gamepad1.left_trigger);
       
         telemetry.update();
     }
   }
-
-      
-      private void resetEncoders() 
-      {
-       armMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-      }
-    
-  }
-    }
-      
-      
-    
 }

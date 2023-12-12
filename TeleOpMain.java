@@ -1,5 +1,5 @@
+//Import required librarys
 package org.firstinspires.ftc.teamcode;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
@@ -15,14 +15,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-    
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 
 @TeleOp(name = "TeleOpMain", group = "Drive")
 public class TeleOpMain extends LinearOpMode {
-
-  //public boolean aButt = false;
   
   //Drive Wheels
   private DcMotor FLMoto;
@@ -33,6 +30,10 @@ public class TeleOpMain extends LinearOpMode {
   //Hanging Linear Actuator
   private DcMotor hangMoto;
   private DcMotor armMoto;
+  
+  
+  //Intake
+  private DcMotor intakeArm;
   
   //BlinkinLEDs
   private RevBlinkinLedDriver blinkinLedDriver;
@@ -77,6 +78,9 @@ public class TeleOpMain extends LinearOpMode {
     BRMoto = hardwareMap.dcMotor.get("FRMoto");
     hangMoto = hardwareMap.dcMotor.get("hangMoto");
     armMoto = hardwareMap.dcMotor.get("armMoto");
+    intakeArm = hardwareMap.dcMotor.get("intakeArm");
+    //intakeServoLeft = hardwareMap.servo.get("intakeServoLeft");
+    //intakeServoRight = hardwareMap.servo.get("intakeServoRight");
     //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
     
     
@@ -98,6 +102,11 @@ public class TeleOpMain extends LinearOpMode {
     };
     final float values[] = hsvValues;
 
+    boolean aPressed = false;
+    boolean bPressed = false;
+    boolean yPressed = false;
+    boolean xPressed = false;
+    
     //*****************************************//
     // Put initialization blocks here.         //
     //*****************************************//
@@ -106,21 +115,21 @@ public class TeleOpMain extends LinearOpMode {
     // Set direction of all motors                       //
     //***************************************************//
     
-    FLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
-    FRMoto.setDirection(DcMotorSimple.Direction.FORWARD);
-    BLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
-    BRMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    FLMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    FRMoto.setDirection(DcMotorSimple.Direction.REVERSE);
+    BLMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    BRMoto.setDirection(DcMotorSimple.Direction.REVERSE);
     
     //armRMoto Rotates the lifting arm
     armMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     //hangMoto moves the lift arm up and down
-    hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    //hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
-    hangMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    //hangMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     armMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-    hangMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    //hangMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     //armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     
     //hangMoto.setTargetPosition(0);
@@ -134,47 +143,66 @@ public class TeleOpMain extends LinearOpMode {
     // Run code while op mode is active         //
     //******************************************//
     while (opModeIsActive()) {
+      //telemetry stuff
       telemetry.addData("Status", "opModeIsActive");
       telemetry.addData("Lift Rotation:", armMoto.getCurrentPosition());
       telemetry.update();
-
-     // telemetry.addData("hang Position:", hangMotoPosition);
-       
       
-      
-      
-      //Loop Blocks
       if(gamepad2.a)
       {
-      armMoto.setTargetPosition(220);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
+        aPressed = true;
+        bPressed = false;
+        yPressed = false;
+        xPressed = false;
       }
       
       if(gamepad2.b)
       {
-      armMoto.setTargetPosition(297);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
+        aPressed = false;
+        bPressed = true;
+        yPressed = false;
+        xPressed = false;
       }
-      
       
       if(gamepad2.y)
       {
-      armMoto.setTargetPosition(0);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
-      sleep(100);
+        aPressed = false;
+        bPressed = false;
+        yPressed = true;
+        xPressed = false;
       }
       
+      if(gamepad2.x){
+        aPressed = false;
+        bPressed = false;
+        yPressed = false;
+        xPressed = true;
+      }
+      //Rotate hang arm to attachPole position
+      if(aPressed == true)
+      {
+        moveToPole();
+      }
+      
+      //Rotate hang arm to approchingPole Positon
+      if(bPressed == true)
+      {
+        moveToApproachingPositon();
+      }
+      
+      //Rotate hang arm to bottom positon
+      if(yPressed == true)
+      {
+        moveToBottomPosition();
+      }
+      
+      if(xPressed == true){
+        allTheWayDown();
+      }
       telemetry.update();
+      
       //Code for rotating hang actuator
-      armMoto.setPower(gamepad2.left_stick_y/3);
+      //armMoto.setPower(gamepad2.left_stick_y/3);
 
         
       // code for raising hang actuator
@@ -188,12 +216,30 @@ public class TeleOpMain extends LinearOpMode {
           hangMoto.setPower(0);
         }
         
-      
+        //intake arm rotation
+        intakeArm.setPower(gamepad2.right_stick_y/2);
+        
+        //Intake Servo mapping
+        /*
+        if(gamepad2.dpad_up == true)
+        {
+          removePixel();
+        }
+        
+        if(gamepad2.dpad_down == true)
+        {
+          takeInPixel();
+        }
+        
+        if(gamepad2.dpad_up == true){
+          
+        }
+        */
         //Include Regular Drive Mechanics
-        FRMoto.setPower(gamepad1.left_stick_y); //FL
-        FLMoto.setPower(gamepad1.right_stick_y); //BR
-        BRMoto.setPower(gamepad1.left_stick_y); //BL
-        BLMoto.setPower(gamepad1.right_stick_y); //FR
+        FRMoto.setPower(gamepad1.right_stick_y); //FL
+        FLMoto.setPower(gamepad1.left_stick_y); //BR
+        BRMoto.setPower(gamepad1.right_stick_y); //BL
+        BLMoto.setPower(gamepad1.left_stick_y); //FR
         
         //Strafe Right
         FRMoto.setPower(gamepad1.right_trigger);
@@ -209,10 +255,10 @@ public class TeleOpMain extends LinearOpMode {
       
         telemetry.update();
     }
-      if(gamepad2.a)
-       {
-         moveToPole();
-       }
+      //if(gamepad2.a)
+      // {
+      //   moveToPole();
+      // }
   }
 
       
@@ -223,17 +269,46 @@ public class TeleOpMain extends LinearOpMode {
       
       public void moveToPole()
       {
-      armMoto.setTargetPosition(220);
-      armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      armMoto.setPower(1);
-      telemetry.addData("Lift Rotation:", "a button pressed");
+        armMoto.setTargetPosition(-158);
+        armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armMoto.setPower(0.7);
+        telemetry.addData("Lift Rotation:", "a button pressed");
       }
       
-      
-    
-}
+      public void moveToBottomPosition()
+      {
+        armMoto.setTargetPosition(0);
+        armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armMoto.setPower(1);
+        telemetry.addData("Lift Rotation:", "y button pressed");
       }
       
+      public void moveToApproachingPositon()
+      {
+        armMoto.setTargetPosition(-208);
+        armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armMoto.setPower(1);
+        telemetry.addData("Lift Rotation:", "b button pressed");
+      }
       
+      public void allTheWayDown(){
+        armMoto.setTargetPosition(-195);
+        armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armMoto.setPower(1);
+        telemetry.addData("Lift Rotation:", "b button pressed");
+      }
+      /*
+      public void takeInPixel()
+      {
+        intakeServoLeft.setPosition(1);
+        intakeServoRight.setPosition(0);
+      }
+      
+      public void removePixel()
+      {
+        intakeServoLeft.setPosition(0);
+        intakeServoRight.setPosition(1);
+      }
+      */
     
 }

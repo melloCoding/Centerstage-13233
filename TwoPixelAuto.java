@@ -83,9 +83,9 @@ import java.io.IOException;
 
 
 
-@Autonomous(name = "AutoShort", group = "")
+@Autonomous(name = "TwoPixelAuto", group = "")
 
-public class AutoShort extends LinearOpMode {
+public class TwoPixelAuto extends LinearOpMode {
    
     private DcMotor FLMoto;
     private DcMotor FRMoto;
@@ -96,8 +96,6 @@ public class AutoShort extends LinearOpMode {
     //Liner Slider
     //private DcMotor liftMoto;
   
-    private Servo RS_Claw;
-    private Servo LS_Claw;
     
     private IMU imu;
     private Orientation lastAngle = new Orientation();
@@ -132,8 +130,10 @@ public class AutoShort extends LinearOpMode {
     public enum AutoMode
     {
        AUTO_MODE_NOT_SELECTED,
-       AUTO_MODE_LEFT,
-       AUTO_MODE_RIGHT,
+       AUTO_MODE_BLUEBACK,
+       AUTO_MODE_REDBACK,
+       AUTO_MODE_BLUEFRONT,
+       AUTO_MODE_REDFRONT,
      }
 
     /*
@@ -277,8 +277,10 @@ public class AutoShort extends LinearOpMode {
        /* Display automous mode not selected yet  */
        /*******************************************/
        telemetry.addData("AutoMode","Not Selected");
-       telemetry.addData("AutoMode","a - RIGHT - Red side away from audience/Blue side toward audience");
-       telemetry.addData("AutoMode","b - LEFT - Red side toward audience/Blue side away from audience");
+       telemetry.addData("AutoMode","a - Red alliance in the backstage");
+       telemetry.addData("AutoMode","b - Blue alliance in the backstage");
+       telemetry.addData("AutoMode","y - Blue alliance in the frontstage");
+       telemetry.addData("AutoMode","x - Red alliance in the frontstage");
        telemetry.update();
  
 
@@ -286,12 +288,21 @@ public class AutoShort extends LinearOpMode {
        /* Loop until automous mode is selected  */
        /*****************************************/
        while (!isStopRequested() && autoMode == AutoMode.AUTO_MODE_NOT_SELECTED)  {
+          
           if (gamepad1.a) {  // Red side away from audience/Blue side toward audience
-             autoMode = AutoMode.AUTO_MODE_RIGHT;
+             autoMode = AutoMode.AUTO_MODE_REDBACK;
           }
         
           if (gamepad1.b) {  // Red side toward audience/Blue side away from audience         
-             autoMode = AutoMode.AUTO_MODE_LEFT;
+             autoMode = AutoMode.AUTO_MODE_BLUEBACK;
+          }
+          
+          if (gamepad1.y) {
+              autoMode = AutoMode.AUTO_MODE_BLUEFRONT;
+          }
+          
+          if (gamepad1.x){
+              autoMode = AutoMode.AUTO_MODE_REDFRONT;
           }
   
          idle();
@@ -424,7 +435,7 @@ public class AutoShort extends LinearOpMode {
         //RS_Claw = hardwareMap.servo.get("rsClaw");
         //LS_Claw = hardwareMap.servo.get("lsClaw");
         
-        distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
+        //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
         
 
         VoltSens = hardwareMap.voltageSensor.get("Control Hub");
@@ -447,7 +458,7 @@ public class AutoShort extends LinearOpMode {
          *
          * To Do:  EDIT these two lines to match YOUR mounting configuration.
        */
-       RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
+       RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.BACKWARD;
        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.LEFT;
 
        telemetry.addData("Mode","calibrating imu...." );
@@ -559,12 +570,20 @@ public class AutoShort extends LinearOpMode {
 
        // Determind which automous code to run
        switch (autoMode) {
-          case AUTO_MODE_RIGHT:
-              RightAuto();
+          case AUTO_MODE_REDBACK:
+              RedBackstage();
               break;
  
-          case AUTO_MODE_LEFT:
-              LeftAuto();
+          case AUTO_MODE_BLUEBACK:
+             BlueBackstage();
+              break;
+          
+          case AUTO_MODE_REDFRONT:
+              RedFrontstage();
+              break;
+              
+          case AUTO_MODE_BLUEFRONT:
+              BlueFrontstage();
               break;
  
           case AUTO_MODE_NOT_SELECTED:
@@ -584,22 +603,36 @@ public class AutoShort extends LinearOpMode {
     /*      Blue Zone - Tile A5 (away from audience)                           */
     /* The robot will place the preloaded cone on the low pole and then park   */
     /***************************************************************************/
-    private void LeftAuto() {
+    private void BlueBackstage() {
        // move to the right to get in front of low pole
-       driveForward(3.0, halfPower);
-       strafeRight(60.0, halfPower);
+       driveForward(72.0, fullPower);
+       driveBack(3.0, quarterPower);
     } // End of LeftAuto
     
     /***************************************************************************/
     /* Function: Right Auto                                                    */
     /* Moves to the parking zone                                               *
     /***************************************************************************/
-    private void RightAuto() {
+    private void RedBackstage() {
        // move to the left to get in front of low pole
-       driveForward(3.0, halfPower);
-       strafeLeft(60.0, halfPower);
+       strafeLeft(3.5, halfPower);
+       driveForward(45.0, fullPower);
+       driveBack(5.0, halfPower);
     }  // End of RightAuto
     
+    private void RedFrontstage()
+    {
+      strafeLeft(3.5, halfPower);
+      driveForward(98.0, fullPower);
+      driveBack(4.0,fullPower);
+    }
+    
+    private void BlueFrontstage()
+    {
+      strafeRight(2.0, quarterPower);
+      driveForward(95.0, fullPower);
+      driveBack(4.0,quarterPower);
+    }
     
     /************************************************************/
     /* Function: resetEncoders                                  */
@@ -649,7 +682,7 @@ public class AutoShort extends LinearOpMode {
     /*                                                          */
     /* This function is called to have the robot move forward   */
     /************************************************************/
-    private void driveForward(Double inches,Double power)
+    private void driveBack(Double inches,Double power)
     {
         driveForwardInch(inches, -power, -power, -power, -power);
     }
@@ -661,7 +694,7 @@ public class AutoShort extends LinearOpMode {
     /* This function is called to have the robot move in        */
     /* reverse                                                  */
     /************************************************************/    
-    private void driveBack(Double inches,Double power)
+    private void driveForward(Double inches,Double power)
     {
         driveForwardInch(inches, power, power, power, power);
     }
