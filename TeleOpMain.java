@@ -223,13 +223,12 @@ public class TeleOpMain extends LinearOpMode {
         intakeArm.setPower(gamepad2.right_stick_y/2);
         
         //Intake Servo mapping
-        /*
-        if(gamepad2.dpad_up == true)
+        if(gamepad2.dpad_down == true)
         {
           removePixel();
         }
         
-        if(gamepad2.dpad_down == true)
+        if(gamepad2.dpad_up == true)
         {
           takeInPixel();
         }
@@ -237,7 +236,6 @@ public class TeleOpMain extends LinearOpMode {
         if(gamepad2.dpad_up == true){
           
         }
-        */
         //Include Regular Drive Mechanics
         FRMoto.setPower(gamepad1.right_stick_y); //FL
         FLMoto.setPower(gamepad1.left_stick_y); //BR
@@ -300,18 +298,18 @@ public class TeleOpMain extends LinearOpMode {
         armMoto.setPower(1);
         telemetry.addData("Lift Rotation:", "b button pressed");
       }
-      /*
-      public void takeInPixel()
-      {
+      
+      public void takeInPixel(){
         intakeServoLeft.setPosition(1);
         intakeServoRight.setPosition(0);
       }
-      
+
+
       public void removePixel()
       {
         intakeServoLeft.setPosition(0);
         intakeServoRight.setPosition(1);
       }
-      */
+
     
 }
