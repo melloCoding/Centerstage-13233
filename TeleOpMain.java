@@ -220,7 +220,8 @@ public class TeleOpMain extends LinearOpMode {
         }
         
         //intake arm rotation
-        intakeArm.setPower(gamepad2.right_stick_y/2);
+        intakeArm.setPower(gamepad2.left_stick_y);
+        intakeArmRaise.setPower(gamepad2.right_stick_y/3)
         
         //Intake Servo mapping
         if(gamepad2.dpad_down == true)
@@ -311,5 +312,7 @@ public class TeleOpMain extends LinearOpMode {
         intakeServoRight.setPosition(1);
       }
 
-    
+    public void intakeClawUp(){
+      intakeRotateServo.setPosition(5)
+    }
 }
