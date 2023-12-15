@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -36,8 +37,8 @@ public class TeleOpMain extends LinearOpMode {
   //Intake
   private DcMotor intakeArm;
   private DcMotor intakeArmRaise;
-  private Servo intakeServoLeft;
-  private Servo intakeServoRight;
+  private CRServo intakeServoLeft;
+  private CRServo intakeServoRight;
   private Servo intakeRotateServo;
 
   //BlinkinLEDs
@@ -84,8 +85,8 @@ public class TeleOpMain extends LinearOpMode {
     hangMoto = hardwareMap.dcMotor.get("hangMoto");
     armMoto = hardwareMap.dcMotor.get("armMoto");
     intakeArm = hardwareMap.dcMotor.get("intakeArm");
-    intakeServoLeft = hardwareMap.servo.get("intakeServoLeft");
-    intakeServoRight = hardwareMap.servo.get("intakeServoRight");
+    intakeServoLeft = hardwareMap.crservo.get("intakeServoLeft");
+    intakeServoRight = hardwareMap.crservo.get("intakeServoRight");
     intakeRotateServo = hardwareMap.servo.get("intakeRotateServo");
     intakeArmRaise = hardwareMap.dcMotor.get("intakeArmRaise");
     
@@ -110,10 +111,13 @@ public class TeleOpMain extends LinearOpMode {
     boolean yPressed = false;
     boolean xPressed = false;
     
+    double contPower = 0.0;
+    
     //*****************************************//
     // Put initialization blocks here.         //
     //*****************************************//
-
+    intakeRotateServo.setPosition(0.0);
+    
     //***************************************************//
     // Set direction of all motors                       //
     //***************************************************//
@@ -126,8 +130,9 @@ public class TeleOpMain extends LinearOpMode {
     //armRMoto Rotates the lifting arm
     armMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    
     //hangMoto moves the lift arm up and down
-    //hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
     //hangMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -137,6 +142,7 @@ public class TeleOpMain extends LinearOpMode {
     
     //hangMoto.setTargetPosition(0);
     resetEncoders();
+    
     // Wait for the start of TeleOp
     waitForStart();
 
@@ -221,22 +227,42 @@ public class TeleOpMain extends LinearOpMode {
         
         //intake arm rotation
         intakeArm.setPower(gamepad2.left_stick_y);
-        intakeArmRaise.setPower(gamepad2.right_stick_y/3)
+        intakeArmRaise.setPower(gamepad2.right_stick_y/4);
         
-        //Intake Servo mapping
-        if(gamepad2.dpad_down == true)
-        {
-          removePixel();
-        }
-        
-        if(gamepad2.dpad_up == true)
-        {
-          takeInPixel();
-        }
-        
-        if(gamepad2.dpad_up == true){
-          
-        }
+
+       // Set Intake servo power level and direction if dpad pressed.
+       if (gamepad2.dpad_up){   // intake pixels
+           intakeServoLeft.setPower(-0.60);
+           intakeServoRight.setPower(0.60);   
+        } 
+        // release both pixels 
+        else if (gamepad2.dpad_down){      
+           intakeServoLeft.setPower(0.60);
+           intakeServoRight.setPower(-0.60);  
+       } 
+       // release right pixel only
+       else if (gamepad2.dpad_right){
+           intakeServoLeft.setPower(0.0);
+           intakeServoRight.setPower(-0.60);  
+       }
+       // release left pixel only
+       else if (gamepad2.dpad_left){
+           intakeServoLeft.setPower(0.60);
+           intakeServoRight.setPower(0.0);  
+       }          
+       else{
+          intakeServoLeft.setPower(0.0);
+          intakeServoRight.setPower(0.0);  
+       }    
+       
+       if (gamepad2.right_trigger > 0) {
+          intakeRotateServo.setPosition(0.5);
+       }
+       
+       if (gamepad2.left_trigger > 0) {
+          intakeRotateServo.setPosition(0.0);
+       }
+       
         //Include Regular Drive Mechanics
         FRMoto.setPower(gamepad1.right_stick_y); //FL
         FLMoto.setPower(gamepad1.left_stick_y); //BR
@@ -257,10 +283,6 @@ public class TeleOpMain extends LinearOpMode {
       
         telemetry.update();
     }
-      //if(gamepad2.a)
-      // {
-      //   moveToPole();
-      // }
   }
 
       
@@ -271,7 +293,7 @@ public class TeleOpMain extends LinearOpMode {
       
       public void moveToPole()
       {
-        armMoto.setTargetPosition(-158);
+        armMoto.setTargetPosition(-194);
         armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMoto.setPower(0.7);
         telemetry.addData("Lift Rotation:", "a button pressed");
@@ -300,19 +322,7 @@ public class TeleOpMain extends LinearOpMode {
         telemetry.addData("Lift Rotation:", "b button pressed");
       }
       
-      public void takeInPixel(){
-        intakeServoLeft.setPosition(1);
-        intakeServoRight.setPosition(0);
-      }
-
-
-      public void removePixel()
-      {
-        intakeServoLeft.setPosition(0);
-        intakeServoRight.setPosition(1);
-      }
-
     public void intakeClawUp(){
-      intakeRotateServo.setPosition(5)
+      intakeRotateServo.setPosition(-1);
     }
 }
