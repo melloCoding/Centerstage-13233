@@ -46,10 +46,12 @@ public class TeleOpMain extends LinearOpMode {
   private RevBlinkinLedDriver.BlinkinPattern BasePattern = RevBlinkinLedDriver.BlinkinPattern.BLUE;
   private RevBlinkinLedDriver.BlinkinPattern StopPattern = RevBlinkinLedDriver.BlinkinPattern.RED;
 
-
+  //Drone
+  private Servo droneLaunch;
+  
   //Power Constant
   private static double powerConstant = .51;
-
+ 
   protected enum DisplayKind {
     MANUAL,
     AUTO
@@ -90,13 +92,23 @@ public class TeleOpMain extends LinearOpMode {
     intakeRotateServo = hardwareMap.servo.get("intakeRotateServo");
     intakeArmRaise = hardwareMap.dcMotor.get("intakeArmRaise");
     
+    //Dronelaunch servo
+    droneLaunch = hardwareMap.servo.get("droneLaunch");
+    
     
     //BlinkinLEDs
     blinkinLedDriver = hardwareMap.get(RevBlinkinLedDriver.class, "blinkinLed");
     blinkinLedDriver.setPattern(BasePattern);
     
+    
+    
+    
+    
     int armMotoPosition = 0;
-
+    int intakeArmRaisePosition = 0;
+    
+    
+    
     telemetry.update();
 
     float hsvValues[] = {
@@ -117,7 +129,7 @@ public class TeleOpMain extends LinearOpMode {
     // Put initialization blocks here.         //
     //*****************************************//
     intakeRotateServo.setPosition(0.0);
-    
+    //intakeArmRaise.setPosition(0.0);
     //***************************************************//
     // Set direction of all motors                       //
     //***************************************************//
@@ -127,21 +139,26 @@ public class TeleOpMain extends LinearOpMode {
     BLMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     BRMoto.setDirection(DcMotorSimple.Direction.REVERSE);
     
-    //armRMoto Rotates the lifting arm
+    //armRMoto Rotates the lifting arm for endgame
     armMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
     //hangMoto moves the lift arm up and down
     hangMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-    armMoto.setDirection(DcMotorSimple.Direction.FORWARD);
+    hangMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
-    //hangMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    //intakeArmRaise moves the claw arm up and down during teleop
+    //intakeArmRaise.setDirection(DcMotorSimple.Direction.REVERSE);
+    intakeArmRaise.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+    intakeArmRaise.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     armMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-    //hangMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    //armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    armMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    intakeArmRaise.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     
-    //hangMoto.setTargetPosition(0);
-    resetEncoders();
+    armMoto.setTargetPosition(0);
+    intakeArmRaise.setTargetPosition(0);
+    droneLaunch.setPosition(0.4);
     
     // Wait for the start of TeleOp
     waitForStart();
@@ -155,7 +172,12 @@ public class TeleOpMain extends LinearOpMode {
       //telemetry stuff
       telemetry.addData("Status", "opModeIsActive");
       telemetry.addData("Lift Rotation:", armMoto.getCurrentPosition());
+      telemetry.addData("Arm Intake Rotation:", intakeArmRaise.getCurrentPosition());
+      telemetry.addData("Intake Arm Raise Position:", intakeArmRaisePosition);
       telemetry.update();
+      
+      // Put loop blocks here.
+      intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
       
       if(gamepad2.a)
       {
@@ -213,12 +235,11 @@ public class TeleOpMain extends LinearOpMode {
       //Code for rotating hang actuator
       //armMoto.setPower(gamepad2.left_stick_y/3);
 
-        
       // code for raising hang actuator
-        if(gamepad2.right_bumper == true){
+        if(gamepad1.right_bumper == true){
           hangMoto.setPower(1);
         }
-        else if(gamepad2.left_bumper == true){
+        else if(gamepad1.left_bumper == true){
           hangMoto.setPower(-1);
         }
         else{
@@ -227,7 +248,34 @@ public class TeleOpMain extends LinearOpMode {
         
         //intake arm rotation
         intakeArm.setPower(gamepad2.left_stick_y);
-        intakeArmRaise.setPower(gamepad2.right_stick_y/4);
+        
+
+        //Intake Arm Raise Restricor
+        if(intakeArmRaisePosition < 0)
+        {
+           intakeArmRaisePosition = 0;
+        }
+        if(intakeArmRaisePosition >1000)
+        {
+           intakeArmRaisePosition = 500;
+        }
+        
+        if (gamepad2.a)
+        {
+           intakeArmRaisePosition = intakeArmRaisePosition + 5;
+           intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
+           intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+           intakeArmRaise.setPower(1.0);
+        }
+        if (gamepad2.b)
+        {
+           intakeArmRaisePosition = intakeArmRaisePosition  - 5;
+           intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
+           intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+           intakeArmRaise.setPower(1.0);
+        }
+        
+        //intakeArmRaise.setPower(gamepad2.right_stick_y);
         
 
        // Set Intake servo power level and direction if dpad pressed.
@@ -263,6 +311,14 @@ public class TeleOpMain extends LinearOpMode {
           intakeRotateServo.setPosition(0.0);
        }
        
+       if (gamepad1.dpad_up == true){
+         droneLaunch.setPosition(0);
+       }
+       
+       if (gamepad1.dpad_down == true){
+         droneLaunch.setPosition(0.4);
+       }
+       
         //Include Regular Drive Mechanics
         FRMoto.setPower(gamepad1.right_stick_y); //FL
         FLMoto.setPower(gamepad1.left_stick_y); //BR
@@ -289,6 +345,7 @@ public class TeleOpMain extends LinearOpMode {
       private void resetEncoders() 
       {
        armMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+       //intakeArmRaise.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
       }
       
       public void moveToPole()
@@ -296,7 +353,6 @@ public class TeleOpMain extends LinearOpMode {
         armMoto.setTargetPosition(-194);
         armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMoto.setPower(0.7);
-        telemetry.addData("Lift Rotation:", "a button pressed");
       }
       
       public void moveToBottomPosition()
@@ -304,7 +360,6 @@ public class TeleOpMain extends LinearOpMode {
         armMoto.setTargetPosition(0);
         armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMoto.setPower(1);
-        telemetry.addData("Lift Rotation:", "y button pressed");
       }
       
       public void moveToApproachingPositon()
@@ -312,14 +367,12 @@ public class TeleOpMain extends LinearOpMode {
         armMoto.setTargetPosition(-208);
         armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMoto.setPower(1);
-        telemetry.addData("Lift Rotation:", "b button pressed");
       }
       
       public void allTheWayDown(){
         armMoto.setTargetPosition(-195);
         armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMoto.setPower(1);
-        telemetry.addData("Lift Rotation:", "b button pressed");
       }
       
     public void intakeClawUp(){
