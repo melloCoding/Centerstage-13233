@@ -262,20 +262,12 @@ public class TeleOpMain extends LinearOpMode {
         
         if (gamepad2.a)
         {
-           intakeArmRaisePosition = intakeArmRaisePosition + 5;
-           intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
-           intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-           intakeArmRaise.setPower(1.0);
+           intakearmraiseToHigh();
         }
         if (gamepad2.b)
         {
-           intakeArmRaisePosition = intakeArmRaisePosition  - 5;
-           intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
-           intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-           intakeArmRaise.setPower(1.0);
+           intakearmraiseToLow();
         }
-        
-        //intakeArmRaise.setPower(gamepad2.right_stick_y);
         
 
        // Set Intake servo power level and direction if dpad pressed.
@@ -377,5 +369,17 @@ public class TeleOpMain extends LinearOpMode {
       
     public void intakeClawUp(){
       intakeRotateServo.setPosition(-1);
+    }
+
+    public void intakearmraiseToHigh(){
+      intakeArmRaise.setTargetPosition(220);
+      intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+      intakeArmRaise.setPower(1);
+    }
+
+    public void intakearmraiseToLow(){
+      intakeArmRaise.setTargetPosition(2);
+      intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+      intakeArmRaise.setPower(1);
     }
 }
