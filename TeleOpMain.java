@@ -123,6 +123,9 @@ public class TeleOpMain extends LinearOpMode {
     boolean yPressed = false;
     boolean xPressed = false;
     
+    boolean gamepad2aPressed = false;
+    boolean gamepad2bPressed = false;
+    
     double contPower = 0.0;
     
     //*****************************************//
@@ -177,9 +180,9 @@ public class TeleOpMain extends LinearOpMode {
       telemetry.update();
       
       // Put loop blocks here.
-      intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
+      //intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
       
-      if(gamepad2.a)
+      if(gamepad1.a)
       {
         aPressed = true;
         bPressed = false;
@@ -187,7 +190,7 @@ public class TeleOpMain extends LinearOpMode {
         xPressed = false;
       }
       
-      if(gamepad2.b)
+      if(gamepad1.b)
       {
         aPressed = false;
         bPressed = true;
@@ -195,7 +198,7 @@ public class TeleOpMain extends LinearOpMode {
         xPressed = false;
       }
       
-      if(gamepad2.y)
+      if(gamepad1.y)
       {
         aPressed = false;
         bPressed = false;
@@ -203,12 +206,22 @@ public class TeleOpMain extends LinearOpMode {
         xPressed = false;
       }
       
-      if(gamepad2.x){
+      if(gamepad1.x){
         aPressed = false;
         bPressed = false;
         yPressed = false;
         xPressed = true;
       }
+      
+      if(gamepad2.a){
+        gamepad2aPressed = true;
+        gamepad2bPressed = false;
+      }
+      if(gamepad2.b){
+        gamepad2aPressed = false;
+        gamepad2bPressed = true;
+      }
+      
       //Rotate hang arm to attachPole position
       if(aPressed == true)
       {
@@ -251,7 +264,8 @@ public class TeleOpMain extends LinearOpMode {
         
 
         //Intake Arm Raise Restricor
-        if(intakeArmRaisePosition < 0)
+        
+        /*if(intakeArmRaisePosition < 0)
         {
            intakeArmRaisePosition = 0;
         }
@@ -259,12 +273,12 @@ public class TeleOpMain extends LinearOpMode {
         {
            intakeArmRaisePosition = 500;
         }
-        
-        if (gamepad2.a)
+        */
+        if (gamepad2aPressed)
         {
            intakearmraiseToHigh();
         }
-        if (gamepad2.b)
+        if (gamepad2bPressed)
         {
            intakearmraiseToLow();
         }
@@ -375,11 +389,13 @@ public class TeleOpMain extends LinearOpMode {
       intakeArmRaise.setTargetPosition(220);
       intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       intakeArmRaise.setPower(1);
+      intakeRotateServo.setPosition(0.4);
     }
 
     public void intakearmraiseToLow(){
       intakeArmRaise.setTargetPosition(2);
       intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       intakeArmRaise.setPower(1);
+      intakeRotateServo.setPosition(-1);
     }
 }
