@@ -105,7 +105,7 @@ public class TeleOpMain extends LinearOpMode {
     
     
     int armMotoPosition = 0;
-    int intakeArmRaisePosition = 0;
+    int intakeArmPosition = intakeArm.getCurrentPosition;
     
     
     
@@ -132,7 +132,6 @@ public class TeleOpMain extends LinearOpMode {
     // Put initialization blocks here.         //
     //*****************************************//
     intakeRotateServo.setPosition(0.0);
-    //intakeArmRaise.setPosition(0.0);
     //***************************************************//
     // Set direction of all motors                       //
     //***************************************************//
@@ -176,12 +175,20 @@ public class TeleOpMain extends LinearOpMode {
       telemetry.addData("Status", "opModeIsActive");
       telemetry.addData("Lift Rotation:", armMoto.getCurrentPosition());
       telemetry.addData("Arm Intake Rotation:", intakeArmRaise.getCurrentPosition());
-      telemetry.addData("Intake Arm Raise Position:", intakeArmRaisePosition);
+      telemetry.addData("Intake Arm Raise Position:", intakeArmPosition);
       telemetry.update();
       
-      // Put loop blocks here.
-      //intakeArmRaise.setTargetPosition(intakeArmRaisePosition);
+
+
       
+      //**********************************************************//
+      //Changes the The variables assigned to the buttons using   //
+      //the if statements below                                   //
+      //gamepad1 button checks                                    //
+      //used so you can press the button once and an if statement //
+      //will continue running in the loop by changeing variables  //
+      //that are placed outside of the loop                       //
+      //**********************************************************//
       if(gamepad1.a)
       {
         aPressed = true;
@@ -213,6 +220,14 @@ public class TeleOpMain extends LinearOpMode {
         xPressed = true;
       }
       
+      //**********************************************************//
+      //Changes the The variables assigned to the buttons using   //
+      //the if statements below                                   //
+      //gamepad2 button checks                                    //
+      //used so you can press the button once and an if statement //
+      //will continue running in the loop by changeing variables  //
+      //that are placed outside of the loop                       //
+      //**********************************************************//
       if(gamepad2.a){
         gamepad2aPressed = true;
         gamepad2bPressed = false;
@@ -222,31 +237,31 @@ public class TeleOpMain extends LinearOpMode {
         gamepad2bPressed = true;
       }
       
+
+
       //Rotate hang arm to attachPole position
       if(aPressed == true)
       {
         moveToPole();
       }
-      
       //Rotate hang arm to approchingPole Positon
       if(bPressed == true)
       {
         moveToApproachingPositon();
       }
-      
       //Rotate hang arm to bottom positon
       if(yPressed == true)
       {
         moveToBottomPosition();
       }
-      
+      //Return hang arm to the bottom
       if(xPressed == true){
         allTheWayDown();
       }
       telemetry.update();
-      
-      //Code for rotating hang actuator
-      //armMoto.setPower(gamepad2.left_stick_y/3);
+
+
+
 
       // code for raising hang actuator
         if(gamepad1.right_bumper == true){
@@ -265,15 +280,16 @@ public class TeleOpMain extends LinearOpMode {
 
         //Intake Arm Raise Restricor
         
-        /*if(intakeArmRaisePosition < 0)
+        if(intakeArmPosition < 0)
         {
-           intakeArmRaisePosition = 0;
+           intakeArmPosition = 0;
         }
-        if(intakeArmRaisePosition >1000)
+        if(intakeArmPosition >1000)
         {
-           intakeArmRaisePosition = 500;
+           intakeArmPosition = 500;
         }
-        */
+        
+
         if (gamepad2aPressed)
         {
            intakearmraiseToHigh();
@@ -287,7 +303,7 @@ public class TeleOpMain extends LinearOpMode {
        // Set Intake servo power level and direction if dpad pressed.
        if (gamepad2.dpad_up){   // intake pixels
            intakeServoLeft.setPower(-0.60);
-           intakeServoRight.setPower(0.60);   
+           intakeServoRight.setPower(0.60);
         } 
         // release both pixels 
         else if (gamepad2.dpad_down){      
