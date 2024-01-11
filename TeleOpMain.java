@@ -135,7 +135,6 @@ public class TeleOpMain extends LinearOpMode {
     //***************************************************//
     // Set direction of all motors                       //
     //***************************************************//
-    
     FLMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     FRMoto.setDirection(DcMotorSimple.Direction.REVERSE);
     BLMoto.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -150,7 +149,6 @@ public class TeleOpMain extends LinearOpMode {
     hangMoto.setDirection(DcMotorSimple.Direction.FORWARD);
     
     //intakeArmRaise moves the claw arm up and down during teleop
-    //intakeArmRaise.setDirection(DcMotorSimple.Direction.REVERSE);
     intakeArmRaise.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
     intakeArmRaise.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -162,16 +160,17 @@ public class TeleOpMain extends LinearOpMode {
     intakeArmRaise.setTargetPosition(0);
     droneLaunch.setPosition(0.4);
     
-    // Wait for the start of TeleOp
+    //The waitForStart() function will whait for the start button will begin
     waitForStart();
-
-    // Put run blocks here.
 
     //******************************************//
     // Run code while op mode is active         //
     //******************************************//
     while (opModeIsActive()) {
-      //telemetry stuff
+      //**************************************************************//
+      //Telemetry Code the stuff that appears on the right side of the//
+      //driver hub                                                    //
+      //**************************************************************//
       telemetry.addData("Status", "opModeIsActive");
       telemetry.addData("Lift Rotation:", armMoto.getCurrentPosition());
       telemetry.addData("Arm Intake Rotation:", intakeArmRaise.getCurrentPosition());
@@ -180,7 +179,7 @@ public class TeleOpMain extends LinearOpMode {
       
 
 
-      
+
       //**********************************************************//
       //Changes the The variables assigned to the buttons using   //
       //the if statements below                                   //
