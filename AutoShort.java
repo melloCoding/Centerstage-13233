@@ -1,6 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import java.util.logging.Level;
@@ -11,15 +18,10 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import java.lang.annotation.Target;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-//import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 import java.io.FileOutputStream;
 import java.io.File;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -68,8 +70,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,8 +102,11 @@ public class AutoShort extends LinearOpMode {
     //Liner Slider
     //private DcMotor liftMoto;
   
-    private Servo RS_Claw;
-    private Servo LS_Claw;
+    private DcMotor intakeArm;
+    private DcMotor intakeArmRaise;
+    private CRServo intakeServoLeft;
+    private CRServo intakeServoRight;
+    private Servo intakeRotateServo;
     
     private IMU imu;
     private Orientation lastAngle = new Orientation();
@@ -191,23 +200,12 @@ public class AutoShort extends LinearOpMode {
      */
     private TFObjectDetector tfod;
     
-    /*
-     * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
-     * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
-     * A Vuforia 'Development' license key, can be obtained free of charge from the Vuforia developer
-     * web site at https://developer.vuforia.com/license-manager.
-     *
-     * Vuforia license keys are always 380 characters long, and look as if they contain mostly
-     * random data. As an example, here is a example of a fragment of a valid key:
-     *      ... yIgIzTqZ4mWjk9wd3cZO9T1axEqzuhxoGlfOOI2dRzKS4T0hQ8kT ...
-     * Once you've obtained a license key, copy the string from the Vuforia web site
-     * and paste it in to your code on the next line, between the double quotes.
-     */
-    private static final String VUFORIA_KEY =
-            "AXK2+Q//////AAABmXkdsFZ1sUa9jA4uuZQ6jkcHNGGYStEDQ8eM/w/Gye+u5s3NqHAKx1vlGU1pQO9tEekp3Y/hWWEi3fWmfqmgezOOYnXq+9+BVoZSUS+kWzlF0FcDUe42Xvu2+aWtJ7xpjZXY2HY7ciUCVmZ+/paabtXrVtZDDYgtmxgHWoHN6NODL76PV497bREE8sWBLWJdpE+895noqVZ+fYVUhmutLGf1UzdRoo8e3M2s8Prh51wKefpqulfhZdZB34TWQQUKv9Tlk61QYhzBWKMUZdr323LWYqsF6FX3eS/tz9QzCqLUGMlfwWcR5dnDpt8ChcNXqW17R6vu7QVEuMdl2RnK2M9PhXIiuLegedIxB4nUgZpX ";
-
- 
     /**
+     * The variable to store our instance of the vision portal.
+     */
+    private VisionPortal visionPortal;
+    
+   /**
      * This is the webcam we are to use. As with other hardware devices such as motors and
      * servos, this device is identified using the robot configuration tool in the FTC application.
      */
@@ -414,18 +412,11 @@ public class AutoShort extends LinearOpMode {
         BLMoto = hardwareMap.dcMotor.get("BLMoto");
         BRMoto = hardwareMap.dcMotor.get("FRMoto");
         armMoto = hardwareMap.dcMotor.get("armMoto");
-        
-        //liftMoto = hardwareMap.dcMotor.get("liftMoto");
-        //liftMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //liftMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //liftMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //liftMoto.setTargetPosition(0);
-        
-        //RS_Claw = hardwareMap.servo.get("rsClaw");
-        //LS_Claw = hardwareMap.servo.get("lsClaw");
-        
-        distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
-        
+        intakeArm = hardwareMap.dcMotor.get("intakeArm");
+        intakeServoLeft = hardwareMap.crservo.get("intakeServoLeft");
+        intakeServoRight = hardwareMap.crservo.get("intakeServoRight");
+        intakeRotateServo = hardwareMap.servo.get("intakeRotateServo");
+        intakeArmRaise = hardwareMap.dcMotor.get("intakeArmRaise");
 
         VoltSens = hardwareMap.voltageSensor.get("Control Hub");
        
@@ -468,17 +459,12 @@ public class AutoShort extends LinearOpMode {
            telemetry.update();
        }
       
-
+       // Init Tensor
+       //initTfod();
        
-       /**
-         * Activate TensorFlow Object Detection before we wait for the start command.
-         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
-         **/
-        if (tfod != null) {
-            tfod.activate();
-        }
+  
        
-       // Put initialization blocks here.
+       // Put initiinitTfod();alization blocks here.
        
        // set direction of motors
         FLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -508,9 +494,8 @@ public class AutoShort extends LinearOpMode {
        // and amount of delay time
        Integer delayTimeMilliseconds = 0;     // variable to store how long to delay before starting automous
         
-       armMoto.setTargetPosition(156);
-       armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-       armMoto.setPower(1);
+       intakeRotateServo.setPosition(0.0);
+
        /***********************************************************/
        /* Select Automous Mode and Delay time                     */
        /***********************************************************/
