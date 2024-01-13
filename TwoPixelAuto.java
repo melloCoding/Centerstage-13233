@@ -11,22 +11,13 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import java.lang.annotation.Target;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-//import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 import java.io.FileOutputStream;
 import java.io.File;
 import com.qualcomm.robotcore.util.RobotLog;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import java.util.Set;
 import java.util.Map;
@@ -35,9 +26,9 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
-// import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -54,22 +45,25 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-
-// import for Vuforia
 import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 
+// imports for TensorFlow
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.tfod.TfodProcessor;
+
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.MatrixF;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
-import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,11 +85,15 @@ public class TwoPixelAuto extends LinearOpMode {
     private DcMotor FRMoto;
     private DcMotor BLMoto;
     private DcMotor BRMoto;
-    private DcMotor armMoto;
     
-    //Liner Slider
-    //private DcMotor liftMoto;
-  
+    //
+    // Hardware for pixel intake
+    //
+    private DcMotor intakeArm;
+    private DcMotor intakeArmRaise;
+    private CRServo intakeServoLeft;
+    private CRServo intakeServoRight;
+    private Servo intakeRotateServo;
     
     private IMU imu;
     private Orientation lastAngle = new Orientation();
@@ -103,8 +101,9 @@ public class TwoPixelAuto extends LinearOpMode {
     private static double powerConstant = .5;
     
     private DistanceSensor distSensor;
+    //Drone
+    private Servo droneLaunch;
     
-
     //BlinkinLEDs
     private RevBlinkinLedDriver blinkinLedDriver;
         
@@ -117,9 +116,10 @@ public class TwoPixelAuto extends LinearOpMode {
     /*********************/
     /* Variables for imu */
     /*********************/
-    double        globalAngle, correction;
+    double            globalAngle, correction;
     YawPitchRollAngles   lastAngles;
     
+    // Use Voltage reading to try to maintain consistent power during Auto
     double voltage = 0;
     double batteryConst = 13.5;
     double powerConst;
@@ -143,95 +143,48 @@ public class TwoPixelAuto extends LinearOpMode {
      * has been downloaded to the Robot Controller's SD FLASH memory, it must to be loaded using loadModelFromFile()
      * Here we assume it's an Asset.    Also see method initTfod() below .
      */
-    //private static final String TFOD_MODEL_ASSET = "PowerPlay.tflite";
-        
-    private static final String TFOD_MODEL_FILE  = "/sdcard/FIRST/tflitemodels/myCustomPowerPlayModel1.tflite";
-
-   /* private static final String[] LABELS = {
-      "1 Bolt",
-      "2 Bulb",
-      "3 Panel"
-    }; */
+ 
+    // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
+    // this is only used for Android Studio when using models in Assets.
+    private static final String TFOD_MODEL_ASSET = "MyModelStoredAsAsset.tflite";
     
-     private static final String[] LABELS = {
-      "blueSquare",
-      "pinkTriangle",
-      "yellowCookie",
+    // TFOD_MODEL_FILE points to a model file stored onboard the Robot Controller's storage,
+    // this is used when uploading models directly to the RC using the model upload interface.
+    private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/13233CustModCenterStage.tflite";
+    
+    // Define the labels recognized in the model for TFOD (must be in training order!)
+    private static final String[] LABELS = {
+       // "Pixel",
+       "BlueGE",
+       "RedGE"
     };
  
-    public enum parkLocation
+    public enum GELocation
     {
-       LOC_LOCATION1,
-       LOC_LOCATION2,
-       LOC_LOCATION3,
+       LOC_LOCATIONRIGHT,
+       LOC_LOCATIONCENTER,
+       LOC_LOCATIONLEFT,
        LOC_NOT_SELECTED
     }
-    
-          
+              
     private static final Double wheelCircumference = 4.0 * Math.PI;
     private static final Double gearRatio = 1.0;
     private static final Double countsPerRotation = 2240.0;
     private static final Double scaleFactor = 0.3;
     private static final Double countsPerInch =  countsPerRotation / wheelCircumference / gearRatio * scaleFactor;
 
-    // Add Vuforia Variables
-    public static final String TAG = "Vuforia VuMark Sample";
-
-    OpenGLMatrix phoneLocationOnRobot = null;
-
-    /**
-     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
-     * localization engine.
-     */
-    //VuforiaLocalizer vuforia;
     
     /**
-     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
-     * Detection engine.
+     * The variable to store our instance of the TensorFlow Object Detection processor.
      */
-    private TFObjectDetector tfod;
-    
-    /*
-     * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
-     * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
-     * A Vuforia 'Development' license key, can be obtained free of charge from the Vuforia developer
-     * web site at https://developer.vuforia.com/license-manager.
-     *
-     * Vuforia license keys are always 380 characters long, and look as if they contain mostly
-     * random data. As an example, here is a example of a fragment of a valid key:
-     *      ... yIgIzTqZ4mWjk9wd3cZO9T1axEqzuhxoGlfOOI2dRzKS4T0hQ8kT ...
-     * Once you've obtained a license key, copy the string from the Vuforia web site
-     * and paste it in to your code on the next line, between the double quotes.
-     */
-    private static final String VUFORIA_KEY =
-            "AXK2+Q//////AAABmXkdsFZ1sUa9jA4uuZQ6jkcHNGGYStEDQ8eM/w/Gye+u5s3NqHAKx1vlGU1pQO9tEekp3Y/hWWEi3fWmfqmgezOOYnXq+9+BVoZSUS+kWzlF0FcDUe42Xvu2+aWtJ7xpjZXY2HY7ciUCVmZ+/paabtXrVtZDDYgtmxgHWoHN6NODL76PV497bREE8sWBLWJdpE+895noqVZ+fYVUhmutLGf1UzdRoo8e3M2s8Prh51wKefpqulfhZdZB34TWQQUKv9Tlk61QYhzBWKMUZdr323LWYqsF6FX3eS/tz9QzCqLUGMlfwWcR5dnDpt8ChcNXqW17R6vu7QVEuMdl2RnK2M9PhXIiuLegedIxB4nUgZpX ";
+    private TfodProcessor tfod;
 
- 
     /**
-     * This is the webcam we are to use. As with other hardware devices such as motors and
-     * servos, this device is identified using the robot configuration tool in the FTC application.
+     * The variable to store our instance of the vision portal.
      */
-    WebcamName webcamName = null;
+    private VisionPortal visionPortal;
+        
 
-    
-    /**
-     * We use units of mm here because that's the recommended units of measurement for the
-     * size values specified in the XML for the ImageTarget trackables in data sets. E.g.:
-     *      <ImageTarget name="stones" size="247 173"/>
-     * You don't *have to* use mm here, but the units here and the units used in the XML
-     * target configuration files *must* correspond for the math to work out correctly.
-    */
-    private static float mmPerInch        = 25.4f;
-    private static float mmBotWidth       = 18 * mmPerInch;            // ... or whatever is right for your robot
-    private static float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
-
-    private static float mmTargetHeight   = (4) * mmPerInch;           // the height of the center of the target IncompatibleClassChangeError
-    private static float stoneZ           = 2.00f * mmPerInch;         // constant for stone target
-    
-    private static float CAMERA_FORWARD_DISPLACEMENT = 7.0f * mmPerInch;  // camera is 6 inches in front of robot-center
-    private static float CAMERA_VERTICAL_DISPLACEMENT = 7.0f * mmPerInch;  // camera is 6 inches above the ground
-    private static float CAMERA_LEFT_DISPLACEMENT = 15.0f * mmPerInch;     // camera is 6 inches right of center 
-    
     // Gobal Variables
     private static Double noPower = 0.0;
     private static Double quarterPower = 0.25;
@@ -240,24 +193,18 @@ public class TwoPixelAuto extends LinearOpMode {
     private static Double threeQuartPower = 0.65;
     private static Double fullPower = 1.0;
     
-    // Terminal Positions
+    // Pixel Arm Positions Variables (need to find actual values during testing)
     private static int posBottom = 0;
-    private static int posPreload = -200;
-    private static int posLowTerm = -2800;
-    private static int posMediumTerm = -4500;
-    private static int posHighTerm = -5700;
-    private static int posFirstCone = -1075;
-    private static int posSecondCone = -950;
+    private static int posForMoving = -200;
+    private static int posBackdrop = -2800;
     
+    // Sleep Variables
     private static int sleepTimeNone = 0;
-    private static int sleepTimePre = 500;
-    private static int sleepTimeFirst = 500;
-    private static int sleepTimeLow = 500;
-    private static int sleepTimeMed = 800;
-    private static int sleepTimeHigh = 1000;
+
     
-    private parkLocation parkLocationDetected = parkLocation.LOC_NOT_SELECTED;
-    AutoMode autoMode = AutoMode.AUTO_MODE_NOT_SELECTED;      // variable to store automous mode selected
+    // Global Variables to store Game Specific Information
+    private GELocation  GELocationDetected = GELocation.LOC_NOT_SELECTED;     // location to place purple pixel
+    AutoMode autoMode = AutoMode.AUTO_MODE_NOT_SELECTED;                      // automous mode selected
   
     
     /*******************************************************************************************/
@@ -266,8 +213,10 @@ public class TwoPixelAuto extends LinearOpMode {
     /*                                                                                         */
     /* This function is use to select the automous code to be executed for this match          */
     /* Game pad 1 is used and the following buttons are used for selection:                    */
-    /*      a - Right Side - Red side away from audience/Blue side toward audience             */
-    /*      b - Left Side - Red side toward audience/Blue side away from audience              */
+    /*      a - Red alliance Backstage                                                         */
+    /*      b - Blue alliance Backstage                                                        */
+    /*      x - Red alliance Frontstage                                                        */
+    /*      y - Blue alliance Frontstage                                                       */
     /*******************************************************************************************/
     private AutoMode SelectAutoMode() {
  
@@ -277,13 +226,13 @@ public class TwoPixelAuto extends LinearOpMode {
        /* Display automous mode not selected yet  */
        /*******************************************/
        telemetry.addData("AutoMode","Not Selected");
-       telemetry.addData("AutoMode","a - Red alliance in the backstage");
-       telemetry.addData("AutoMode","b - Blue alliance in the backstage");
-       telemetry.addData("AutoMode","y - Blue alliance in the frontstage");
-       telemetry.addData("AutoMode","x - Red alliance in the frontstage");
+       telemetry.addData("AutoMode","Select a - Red alliance in the backstage");
+       telemetry.addData("AutoMode","Select b - Blue alliance in the backstage");
+       telemetry.addData("AutoMode","Select x - Red alliance in the frontstage");       
+       telemetry.addData("AutoMode","Select y - Blue alliance in the frontstage");
+
        telemetry.update();
  
-
        /*****************************************/
        /* Loop until automous mode is selected  */
        /*****************************************/
@@ -316,7 +265,7 @@ public class TwoPixelAuto extends LinearOpMode {
        telemetry.update();
 
       // Wait for the user to release the button
-      while (!isStopRequested() && (gamepad1.a || gamepad1.b)) {
+      while (!isStopRequested() && (gamepad1.a || gamepad1.b || gamepad1.x || gamepad1.y)) {
          idle();
       } 
  
@@ -411,38 +360,57 @@ public class TwoPixelAuto extends LinearOpMode {
    @Override
    public void runOpMode() throws InterruptedException {
         
-        double tgtPower = 0;
+       double tgtPower = 0;
         
        telemetry.setAutoClear(false);
        telemetry.addData("Status", "Initializing");
        telemetry.update();
        
-       /********************/
-       /* Map All Motors   */
-       /********************/
+       /*********************
+          Map All Motors   
+        ********************/
+
+       //****************************************//
+       // Map Drive Train motors                 //
+       //    - BR means "back right"             //
+       //    - BL means "back left"              //
+       //    - FR means "front right"            //
+       //    - FL means "front left"             //
+       //****************************************//
         FLMoto = hardwareMap.dcMotor.get("FLMoto");
         FRMoto = hardwareMap.dcMotor.get("BRMoto");
         BLMoto = hardwareMap.dcMotor.get("BLMoto");
         BRMoto = hardwareMap.dcMotor.get("FRMoto");
-        armMoto = hardwareMap.dcMotor.get("armMoto");
         
-        //liftMoto = hardwareMap.dcMotor.get("liftMoto");
-        //liftMoto.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //liftMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //liftMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //liftMoto.setTargetPosition(0);
-        
-        //RS_Claw = hardwareMap.servo.get("rsClaw");
-        //LS_Claw = hardwareMap.servo.get("lsClaw");
-        
-        //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");
-        
+        //*******************************//
+        // Motors for delivering pixels  //
+        //*******************************//
+        intakeArm = hardwareMap.dcMotor.get("intakeArm");
+        intakeArmRaise = hardwareMap.dcMotor.get("intakeArmRaise");
 
-        VoltSens = hardwareMap.voltageSensor.get("Control Hub");
+      
+        /********************/
+        /* Map All Servos   */
+        /********************/
+
+        //*******************************//
+        // Servos for delivering pixels  //
+        //*******************************//
+        intakeArm = hardwareMap.dcMotor.get("intakeArm");
+        intakeServoLeft = hardwareMap.crservo.get("intakeServoLeft");
+        intakeServoRight = hardwareMap.crservo.get("intakeServoRight");
+        intakeRotateServo = hardwareMap.servo.get("intakeRotateServo");
+  
+        //Dronelaunch servo
+        droneLaunch = hardwareMap.servo.get("droneLaunch");
+        
+        /********************/
+        /* Map All Sensors  */
+        /********************/     
+
+        //distSensor = hardwareMap.get(DistanceSensor.class, "distSensor");  // not used yet
        
-       /********************/
-       /* Map All Servos   */
-       /********************/
+        VoltSens = hardwareMap.voltageSensor.get("Control Hub");
        
        
        /************************/
@@ -459,7 +427,7 @@ public class TwoPixelAuto extends LinearOpMode {
          * To Do:  EDIT these two lines to match YOUR mounting configuration.
        */
        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.BACKWARD;
-       RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.LEFT;
+       RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.DOWN;
 
        telemetry.addData("Mode","calibrating imu...." );
        telemetry.update();
@@ -479,17 +447,11 @@ public class TwoPixelAuto extends LinearOpMode {
            telemetry.update();
        }
       
-
-       
-       /**
-         * Activate TensorFlow Object Detection before we wait for the start command.
-         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
-         **/
-        if (tfod != null) {
-            tfod.activate();
-        }
-       
+            
        // Put initialization blocks here.
+       
+       // Initalize camera
+       initTfod();
        
        // set direction of motors
         FLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -497,13 +459,33 @@ public class TwoPixelAuto extends LinearOpMode {
         BLMoto.setDirection(DcMotorSimple.Direction.REVERSE);
         BRMoto.setDirection(DcMotorSimple.Direction.FORWARD);
         
-        // Set the slider motor to the bottom before start 
-
-        // liftMoto.setTargetPosition(0);
-
+                
+       // Set the intakeArmRaise motor (moves the claw arm up and down)
+       // direction and zero power behavior.  Also set target position to 0.
+       intakeArmRaise.setDirection(DcMotorSimple.Direction.REVERSE);
+       intakeArmRaise.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+       intakeArmRaise.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+       intakeArmRaise.setTargetPosition(posBottom);
         
-        //Distance Sensor
+        //Distance Sensor (Not used yet)
 
+        // Variables for intake arm
+        int armMotoPosition = 0;
+        int intakeArmRaisePosition = 0;
+
+        // Put initialization for Intake Arm hardware 
+        // intakeRotateServo need to be down so the claw is 
+        // not in the way.
+        
+        //intakeArmRaise moves the claw arm up and down
+        //intakeArmRaise.setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeArmRaise.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intakeArmRaise.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intakeArmRaise.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    
+        intakeArmRaise.setTargetPosition(0);
+        droneLaunch.setPosition(0.4);
+    
         float hsvValues[] = {0F, 0F, 0F};
         final float values[] = hsvValues;
         
@@ -514,14 +496,9 @@ public class TwoPixelAuto extends LinearOpMode {
         // telemetry.addData("Pattern: ", BasePattern.toString());
         // telemetry.update();
        
-       
-       // Create local variable to store selected automous mode
-       // and amount of delay time
+       // Create local variable to store amount of delay time
        Integer delayTimeMilliseconds = 0;     // variable to store how long to delay before starting automous
         
-       armMoto.setTargetPosition(156);
-       armMoto.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-       armMoto.setPower(1);
        /***********************************************************/
        /* Select Automous Mode and Delay time                     */
        /***********************************************************/
@@ -549,13 +526,9 @@ public class TwoPixelAuto extends LinearOpMode {
 
        resetEncoders();
 
-
-
-       // lift cone off of floor
-
+       // Call function to use TensorFlow to find Game Element location
+       findGELocation();
        
-
-
        // Delay start if needed
        if (delayTimeMilliseconds > 0) {
           telemetry.addData("Status","Delaying");    // display delay status
@@ -568,22 +541,30 @@ public class TwoPixelAuto extends LinearOpMode {
 
        }
 
+       //
+       // Common code for all locations to get robot between spikes
+       //
+       
+       // rotate claw up so it doesn't drag on the floor
+       intakeRotateServo.setPosition(0.0);
+       driveForward(8.0, halfPower);
+       
        // Determind which automous code to run
        switch (autoMode) {
           case AUTO_MODE_REDBACK:
-              RedBackstage();
+              RedBackStage();
               break;
  
           case AUTO_MODE_BLUEBACK:
-             BlueBackstage();
+              BlueBackStage();
               break;
           
           case AUTO_MODE_REDFRONT:
-              RedFrontstage();
+              RedFrontStage();
               break;
               
           case AUTO_MODE_BLUEFRONT:
-              BlueFrontstage();
+              BlueFrontStage();
               break;
  
           case AUTO_MODE_NOT_SELECTED:
@@ -593,45 +574,325 @@ public class TwoPixelAuto extends LinearOpMode {
     }
     
     /***************************************************************************/
-    /* Function: Left Automous                                                 */
+    /* Function: BlueBackstage                                                 */
     /* Returns: none                                                           */
-    /* Uses Global Variables: parkLocation                                     */
+    /* Uses Global Variables: GELocationDetected                               */
     /*                                                                         */
-    /* This function is for when the robot starts on the left side of the      */
-    /* field.                                                                  */
-    /*      Red Zone - Tile F2 (near audience)                                 */
-    /*      Blue Zone - Tile A5 (away from audience)                           */
-    /* The robot will place the preloaded cone on the low pole and then park   */
+    /* This function is for when the robot is in the blue alliance and starts  */
+    /* in the backstage location                                               */
+    /*                                                                         */
+    /* The robot will place the preloaded purple pixel on the spike mark that  */
+    /* contains game element.  The robot will then move to the backstage area  */
+    /* where it will place the yellow pixel on the backdrop and then park next */
+    /* to the wall so the other team can have access to the backdrop and then  */
+    /* park.                                                                   */
     /***************************************************************************/
-    private void BlueBackstage() {
-       // move to the right to get in front of low pole
-       driveForward(72.0, fullPower);
-       driveBack(3.0, quarterPower);
-    } // End of LeftAuto
+    private void BlueBackStage() {
+       
+       switch (GELocationDetected) {
+          case LOC_LOCATIONRIGHT:
+              // rotate to the right to face right spike
+              rotate(90, halfPower);
+              releasePurplePixel();
+              driveBack(5.0,quarterPower);
+              
+              // turn the robot around to face the backboard
+              rotate(180, halfPower);
+                           
+              // move towards the backboard
+              driveForward(36.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the left to park              
+              strafeLeft(13.0, halfPower);
+              
+              break;
+ 
+          case LOC_LOCATIONCENTER:
+              // drive forward to get closer to the line if needed.
+              driveForward(4.0, halfPower);
+              releasePurplePixel();
+              
+              // move back so the robot doesn't hit the pixel
+              driveBack(4.0,quarterPower);
+              
+              // rotate to the left to face the backboard
+              rotate(-90, halfPower);
+              
+              // move towards the backboard to place the pixel
+              driveForward(36.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the right to park              
+              strafeLeft(13.0, halfPower);
+              
+              break;
+          
+          case LOC_LOCATIONLEFT:
+              // rotate to the left to face left spike
+              rotate(-90, halfPower);
+              releasePurplePixel();
+              
+              driveBack(2.0,quarterPower);
+              
+              // move to the right so the robot dosen't runover the pixel              
+              strafeLeft(13.0, halfPower);
+              
+              // move towards the backboard
+              driveForward(36.0, halfPower);
+              
+              // move back to the left to get in front of the backboard
+              // for the correct location for the right spike
+              strafeRight(13.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the right to park              
+              strafeLeft(13.0, halfPower);
+              break;
+
+       } 
+       
+    } // End of BlueBackStage()
     
+
     /***************************************************************************/
-    /* Function: Right Auto                                                    */
-    /* Moves to the parking zone                                               *
+    /* Function: RedBackStage                                                  */
+    /* Returns: none                                                           */
+    /* Uses Global Variables: GELocationDetected                               */
+    /*                                                                         */
+    /* This function is for when the robot is in the red alliance and starts   */
+    /* in the backstage location                                               */
+    /*                                                                         */
+    /* The robot will place the preloaded purple pixel on the spike mark that  */
+    /* contains game element.  The robot will then move to the backstage area  */
+    /* where it will place the yellow pixel on the backdrop and then park next */
+    /* to the wall so the other team can have access to the backdrop and then  */
+    /* park.                                                                   */
     /***************************************************************************/
-    private void RedBackstage() {
-       // move to the left to get in front of low pole
-       strafeLeft(3.5, halfPower);
-       driveForward(45.0, fullPower);
-       driveBack(5.0, halfPower);
-    }  // End of RightAuto
-    
-    private void RedFrontstage()
+    private void RedBackStage() {
+       
+       // Robot should be in the middle of the spikes (lines)
+       // place purple pixel on correct spike
+       
+       switch (GELocationDetected) {
+          case LOC_LOCATIONRIGHT:
+              // rotate to the right to face right spike
+              rotate(90, halfPower);
+              releasePurplePixel();
+              driveBack(2.0,quarterPower);
+              
+              // move to the right so the robot dosen't runover the pixel              
+              strafeRight(13.0, halfPower);
+              
+              // move towards the backboard
+              driveForward(36.0, halfPower);
+              
+              // move back to the left to get in front of the backboard
+              // for the correct location for the right spike
+              strafeLeft(13.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the right to park              
+              strafeRight(13.0, halfPower);
+              
+              break;
+ 
+          case LOC_LOCATIONCENTER:
+              // drive forward to get closer to the line if needed.
+              driveForward(4.0, halfPower);
+              releasePurplePixel();
+              
+              // move back so the robot doesn't hit the pixel
+              driveBack(4.0,quarterPower);
+              
+              // rotate to the right to face the backboard
+              rotate(90, halfPower);
+              
+              // move towards the backboard to place the pixel
+              driveForward(36.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the right to park              
+              strafeRight(13.0, halfPower);
+              
+              break;
+          
+          case LOC_LOCATIONLEFT:
+              // rotate to the left to face left spike
+              rotate(-90, halfPower);
+              releasePurplePixel();
+              driveBack(5.0,quarterPower);
+              
+              // turn the robot around to face the backboard
+              rotate(180, halfPower);
+                           
+              // move towards the backboard
+              driveForward(36.0, halfPower);
+              
+              // place pixel on backboard
+              placePixelBB();
+              
+              // move to the left to park              
+              strafeRight(13.0, halfPower);
+              break;
+
+       } 
+       
+
+    }  // End of RedBackStage()
+
+
+    /***************************************************************************/
+    /* Function: RedFrontStage                                                 */
+    /* Returns: none                                                           */
+    /* Uses Global Variables: GELocationDetected                               */
+    /*                                                                         */
+    /* This function is for when the robot is in the red alliance and starts   */
+    /* in the front (audience) location                                        */
+    /*                                                                         */
+    /* The robot will place the preloaded purple pixel on the spike mark that  */
+    /* contains game element.  The robot will then move under the stagedoor to */
+    /* the backstage area where it will place the yellow pixel on the backdrop */ 
+    /* and then park away from the wall.                                       */
+    /***************************************************************************/    
+    private void RedFrontStage()
     {
-      strafeLeft(3.5, halfPower);
-      driveForward(98.0, fullPower);
-      driveBack(4.0,fullPower);
+       switch (GELocationDetected) {
+          case LOC_LOCATIONRIGHT:
+              // rotate to the right to face right spike
+              rotate(90, halfPower);
+              releasePurplePixel();
+              driveBack(2.0,quarterPower);
+              
+              break;
+                //center location
+          case LOC_LOCATIONCENTER:
+              // drive forward to get closer to the line if needed.
+              driveForward(4.0, halfPower);
+              releasePurplePixel();
+              
+              // move back so the robot doesn't hit the pixel
+              driveBack(4.0,quarterPower);
+              
+              break;
+          
+          case LOC_LOCATIONLEFT:
+              // rotate to the left to face left spike
+              rotate(-90, halfPower);
+              releasePurplePixel();
+              driveBack(5.0,quarterPower);
+
+              break;
+       } 
+    } // End of RedFrontStage()
+    
+
+    /***************************************************************************/
+    /* Function: BlueFrontStage                                                */
+    /* Returns: none                                                           */
+    /* Uses Global Variables: GELocationDetected                               */
+    /*                                                                         */
+    /* This function is for when the robot is in the blue alliance and starts   */
+    /* in the front (audience) location                                        */
+    /*                                                                         */
+    /* The robot will place the preloaded purple pixel on the spike mark that  */
+    /* contains game element.  The robot will then move under the stagedoor to */
+    /* the backstage area where it will place the yellow pixel on the backdrop */ 
+    /* and then park away from the wall.                                       */
+    /***************************************************************************/  
+    private void BlueFrontStage()
+    {
+       switch (GELocationDetected) {
+          case LOC_LOCATIONRIGHT:
+              // rotate to the right to face right spike
+              rotate(90, halfPower);
+              releasePurplePixel();
+              driveBack(5.0,quarterPower);
+              
+              break;
+ 
+          case LOC_LOCATIONCENTER:
+              // drive forward to get closer to the line if needed.
+              driveForward(4.0, halfPower);
+              releasePurplePixel();
+              
+              // move back so the robot doesn't hit the pixel
+              driveBack(4.0,quarterPower);
+              
+              break;
+          
+          case LOC_LOCATIONLEFT:
+              // rotate to the left to face left spike
+              rotate(-90, halfPower);
+              releasePurplePixel();
+              
+              driveBack(2.0,quarterPower);
+              
+              break;
+
+       } 
+       
+    } // End of BlueFrontStage()
+    
+    /************************************************************/
+    /* Function: releasePurplePixel                             */
+    /* Returns: nothing                                         */
+    /*                                                          */
+    /* This function is called to release the preloaded purple  */
+    /* pixel from the right intake.                             */
+    /************************************************************/
+    private void releasePurplePixel() {
+         // lower the claw
+         intakeRotateServo.setPosition(0.5);
+         
+         // spin the right intake server to release the preloaded
+         // pixel
+         intakeServoRight.setPower(-0.60);
+         sleep(500);
+         intakeServoRight.setPower(0.0);
+         
+         // raise the claw
+         intakeRotateServo.setPosition(0.0);
     }
     
-    private void BlueFrontstage()
-    {
-      strafeRight(2.0, quarterPower);
-      driveForward(95.0, fullPower);
-      driveBack(4.0,quarterPower);
+    /************************************************************/
+    /* Function: placePixelBB                                   */
+    /* Returns: nothing                                         */
+    /*                                                          */
+    /* This function is called to place the preloaded yellow    */
+    /* pixel from the left intake onto the backboard.           */
+    /************************************************************/
+    private void placePixelBB() {
+        // raise arm and put claw in correct pos
+        intakeArmRaise.setTargetPosition(220);
+        intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        intakeArmRaise.setPower(1);
+        intakeRotateServo.setPosition(0.4);
+        
+        driveForward(4.0,quarterPower);
+        
+        // spin the left intake server to release the preloaded
+        // pixel
+        intakeServoLeft.setPower(0.60);
+        sleep(500);
+        intakeServoLeft.setPower(0.0);
+        
+        driveBack(4.0,quarterPower);
+         
+        intakeArmRaise.setTargetPosition(2);
+        intakeArmRaise.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        intakeArmRaise.setPower(1);
+        intakeRotateServo.setPosition(0.0);
     }
     
     /************************************************************/
@@ -639,7 +900,7 @@ public class TwoPixelAuto extends LinearOpMode {
     /* Returns: nothing                                         */
     /*                                                          */
     /* This function is called to stop and reset the encoders   */
-    /* on all 4 motors.                                         */
+    /* on all 4 drive train motors.                             */
     /************************************************************/
     private void resetEncoders() {
        FRMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -652,8 +913,8 @@ public class TwoPixelAuto extends LinearOpMode {
     /* Function: runUsingEncoders                               */
     /* Returns: nothing                                         */
     /*                                                          */
-    /* This function is called to set all 4 motors to run using */
-    /* encoders.                                                */
+    /* This function is called to set all 4 drive train motors  */
+    /* to run using encoders.                                   */
     /************************************************************/
     private void runUsingEncoders() {
        FRMoto.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -666,7 +927,8 @@ public class TwoPixelAuto extends LinearOpMode {
     /* Function: setDrivePower                                  */
     /* Returns: nothing                                         */
     /*                                                          */
-    /* This function is called to set the power of all 4 motors */
+    /* This function is called to set the power of all 4 drive  */
+    /* train motors                                             */
     /************************************************************/
     private void setDrivePower(double FLpower,double FRpower, Double BLpower, Double BRpower) {  
        FRMoto.setPower(FRpower);
@@ -773,51 +1035,6 @@ public class TwoPixelAuto extends LinearOpMode {
 
     }
     
-    /************************************************************/
-    /*                                                          */
-    /* Function: driveRightInch                                 */
-    /* Returns: nothing                                         */
-    /*                                                          */
-    /* This function is called to have the robot move straigh   */
-    /* in a forward or reverse direction.                       */
-    /*                                                          */
-    /************************************************************/
-    private void driveRightInch(Double inches,Double FLpower,Double FRpower, Double BLpower, Double BRpower) {
-       
-       Double counts = inches * countsPerInch;
-              
-       resetEncoders();
-       runUsingEncoders();
-       
-       voltage = VoltSens.getVoltage();
-       double FLpowerCont = ((batteryConst*FLpower)/voltage);
-       double FRpowerCont = ((batteryConst*FRpower)/voltage);
-       double BLpowerCont = ((batteryConst*BLpower)/voltage);
-       double BRpowerCont = ((batteryConst*BRpower)/voltage);
-       
-       setDrivePower(FLpower, FRpower, BLpower, BRpower);
-    
-       while (opModeIsActive() && 
-          (Math.abs(FLMoto.getCurrentPosition()) + Math.abs(FRMoto.getCurrentPosition()) /2) 
-                     < Math.abs(counts)) {       
-                         
-           // Use gyro to drive in a straight line.
-           correction = checkDirection();
-           
-           // telemetry.addData("1 imu heading", lastAngles.firstAngle);
-           // telemetry.addData("2 global heading", globalAngle);
-           // telemetry.addData("3 correction", correction);
-           // telemetry.update();
-           
-           setDrivePower(FLpower-correction, FRpower+correction, BLpower-correction, BRpower+correction);
-           idle();
-           
-       }
- 
-       setDrivePower(noPower,noPower,noPower,noPower);     // Stop all motors
-
-    }
-
     
     /***************************************************/
     /* Resets the cumulative angle tracking to zero.   */
@@ -928,5 +1145,132 @@ public class TwoPixelAuto extends LinearOpMode {
 
         // reset angle tracking on new heading.
         resetAngle();
-    }  
-}
+    } 
+
+    /**
+     * Initialize the TensorFlow Object Detection processor.
+     */
+    private void initTfod() {
+
+        // Create the TensorFlow processor by using a builder.
+        tfod = new TfodProcessor.Builder()
+
+            // With the following lines commented out, the default TfodProcessor Builder
+            // will load the default model for the season. To define a custom model to load, 
+            // choose one of the following:
+            //   Use setModelAssetName() if the custom TF Model is built in as an asset (AS only).
+            //   Use setModelFileName() if you have downloaded a custom team model to the Robot Controller.
+            //.setModelAssetName(TFOD_MODEL_ASSET)
+            .setModelFileName(TFOD_MODEL_FILE)
+
+            // The following default settings are available to un-comment and edit as needed to 
+            // set parameters for custom models.
+            .setModelLabels(LABELS)
+            //.setIsModelTensorFlow2(true)
+            //.setIsModelQuantized(true)
+            //.setModelInputSize(300)
+            //.setModelAspectRatio(16.0 / 9.0)
+
+            .build();
+
+        // Create the vision portal by using a builder.
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+
+        // Set the camera to use webcam(webcam vs. built-in RC phone camera).
+        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+
+        // Choose a camera resolution. Not all cameras support all resolutions.
+        //builder.setCameraResolution(new Size(640, 480));
+
+        // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
+        builder.enableLiveView(true);
+
+        // Set the stream format; MJPEG uses less bandwidth than default YUY2.
+        //builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
+
+        // Choose whether or not LiveView stops if no processors are enabled.
+        // If set "true", monitor shows solid orange screen if no processors enabled.
+        // If set "false", monitor shows camera view without annotations.
+        //builder.setAutoStopLiveView(false);
+
+        // Set and enable the processor.
+        builder.addProcessor(tfod);
+
+        // Build the Vision Portal, using the above settings.
+        visionPortal = builder.build();
+
+        // Set confidence threshold for TFOD recognitions, at any time.
+        tfod.setMinResultConfidence(0.80f);
+
+        // Disable or re-enable the TFOD processor at any time.
+        //visionPortal.setProcessorEnabled(tfod, true);
+
+    }   // end method initTfod()
+
+    /***************************** findParkLoc ******************************
+     * Uses Tensor Flow to determine the location to place pixel
+     ************************************************************************/
+    private void findGELocation() 
+    {
+        // blinkinLedDriver.setPattern(BasePattern);
+    
+        // GE location = LOC_NOT_SELECTED, LOC_LOCATIONRIGHT, LOC_LOCATIONCENTER, LOC_LOCATIONLEFT  
+        // set GE location to LEFT in case the GAME ELEMENT is not detected since only part of the 
+        // game element is visible on the left side
+        GELocationDetected = GELocation.LOC_LOCATIONLEFT;
+   
+        if (tfod != null) 
+        {
+           List<Recognition> currentRecognitions = tfod.getRecognitions();
+
+           if (currentRecognitions != null) // something new was found
+           {
+              // Step through the list of recognitions and display info for each one.
+              for (Recognition recognition : currentRecognitions) {
+                   double x = (recognition.getLeft() + recognition.getRight()) / 2 ;
+                   double y = (recognition.getTop()  + recognition.getBottom()) / 2 ;
+                   
+                   telemetry.addData(""," ");
+                   telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
+                   telemetry.addData("- Position", "%.0f / %.0f", x, y);
+                   telemetry.addData("- Size", "%.0f x %.0f", recognition.getWidth(), recognition.getHeight());
+                   
+                   // With testing determing what can be used to set spike location for pixel              
+                   if (x <= 350 ) {
+                        telemetry.addData("GE Location", " Center");
+ 
+                        GELocationDetected = GELocation.LOC_LOCATIONCENTER;
+                        // blinkinLedDriver.setPattern(Park1Pattern);
+
+                        telemetry.update();
+                        visionPortal.close(); 
+                        
+                        return;
+
+                    }
+                    else {
+                         telemetry.addData("GE Location", " Right");
+ 
+                        GELocationDetected = GELocation.LOC_LOCATIONRIGHT;
+                        // blinkinLedDriver.setPattern(Park1Pattern);
+
+                        telemetry.update();
+                        visionPortal.close(); 
+                        
+                        return;
+                    }
+  
+                }
+
+            } else 
+            {
+                telemetry.addData("Object Detected", "NONE"); 
+            }
+   
+           telemetry.update();
+           visionPortal.close();
+
+        } // end if tfod != null
+    }   // end findGELocation()
+   
+} // end class TwoPixelAuto m
